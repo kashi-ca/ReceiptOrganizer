@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HistoryView: View {
     @EnvironmentObject private var store: ReceiptStore
+    @State private var showClearAlert = false
 
     var body: some View {
         NavigationStack {
@@ -22,6 +23,7 @@ struct HistoryView: View {
                                 }
                             }
                         }
+                        .onDelete(perform: delete)
                     }
                 }
             }
@@ -29,7 +31,27 @@ struct HistoryView: View {
             .navigationDestination(for: Receipt.self) { receipt in
                 ReceiptDetailView(receipt: receipt)
             }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    if !store.receipts.isEmpty {
+                        Button(role: .destructive) { showClearAlert = true } label: {
+                            Label("Clear", systemImage: "trash")
+                        }
+                        .accessibilityIdentifier("history.clearAll")
+                    }
+                }
+            }
+            .alert("Clear all history?", isPresented: $showClearAlert) {
+                Button("Cancel", role: .cancel) {}
+                Button("Clear All", role: .destructive) { store.clear() }
+            } message: {
+                Text("This removes all scanned receipts.")
+            }
         }
+    }
+
+    private func delete(_ offsets: IndexSet) {
+        store.remove(at: offsets)
     }
 }
 
@@ -37,4 +59,3 @@ struct HistoryView: View {
     HistoryView()
         .environmentObject(ReceiptStore())
 }
-

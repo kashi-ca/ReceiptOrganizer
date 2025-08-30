@@ -19,6 +19,27 @@ final class ReceiptStore: ObservableObject {
         save()
     }
 
+    func remove(at offsets: IndexSet) {
+        for index in offsets.sorted(by: >) {
+            if receipts.indices.contains(index) {
+                receipts.remove(at: index)
+            }
+        }
+        save()
+    }
+
+    func delete(_ receipt: Receipt) {
+        if let idx = receipts.firstIndex(where: { $0.id == receipt.id }) {
+            receipts.remove(at: idx)
+            save()
+        }
+    }
+
+    func clear() {
+        receipts.removeAll()
+        save()
+    }
+
     private func save() {
         do {
             let data = try JSONEncoder().encode(receipts)
@@ -38,4 +59,3 @@ final class ReceiptStore: ObservableObject {
         }
     }
 }
-

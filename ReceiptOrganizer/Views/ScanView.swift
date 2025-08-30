@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ScanView: View {
+    var onScanComplete: (() -> Void)? = nil
     @EnvironmentObject private var store: ReceiptStore
     @State private var showCamera = false
     @State private var isProcessing = false
@@ -69,6 +70,7 @@ struct ScanView: View {
             let lines = try await TextRecognizer.recognizeLines(in: image)
             lastLines = lines
             store.add(lines: lines)
+            onScanComplete?()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -83,6 +85,7 @@ struct ScanView: View {
             let lines = try await TextRecognizer.recognizeLines(in: image)
             lastLines = lines
             store.add(lines: lines)
+            onScanComplete?()
         } catch {
             errorMessage = error.localizedDescription
         }
