@@ -8,17 +8,25 @@
 import SwiftUI
 
 struct ContentView: View {
+    @EnvironmentObject private var store: ReceiptStore
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        TabView {
+            ScanView()
+                .tabItem {
+                    Label("Scan", systemImage: "camera.viewfinder")
+                }
+
+            HistoryView()
+                .tabItem {
+                    Label("History", systemImage: "doc.text.magnifyingglass")
+                }
         }
-        .padding()
+        .environmentObject(store)
     }
 }
 
 #Preview {
     ContentView()
+        .environmentObject(ReceiptStore())
 }
