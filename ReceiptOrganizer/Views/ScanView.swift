@@ -9,41 +9,53 @@ struct ScanView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 16) {
-                Text("Scan a receipt using your camera. Lines will be extracted with on‑device OCR.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
+            ZStack {
+                // Full-screen transparent background to keep layout stable
+                Color.clear
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                Button(action: {
-                    if AppConfig.useLocalSampleReceipt {
-                        Task { await processSample() }
-                    } else {
-                        showCamera = true
-                    }
-                }) {
-                    Label("Scan Receipt", systemImage: "camera.fill")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(isProcessing)
-
+                // Centered progress overlay
                 if isProcessing {
                     ProgressView("Recognizing text…")
-                        .frame(maxWidth: .infinity, alignment: .center)
+                        .controlSize(.large)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
 
-                ContentUnavailableView("Ready to scan", systemImage: "doc.text.viewfinder", description: Text("Results are saved to History."))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .opacity(isProcessing ? 0.4 : 1)
-
+                // Saved confirmation overlay (bottom)
                 if savedMessageVisible {
                     Label("Saved to History", systemImage: "checkmark.circle.fill")
                         .foregroundStyle(.green)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(.ultraThinMaterial, in: Capsule())
+                        .padding(.bottom, 32)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                         .transition(.opacity)
                 }
             }
-            .padding()
             .navigationTitle("Scan")
+            .safeAreaInset(edge: .top) {
+                VStack(spacing: 12) {
+                    Text("Scan a receipt using your camera. Lines will be extracted with on‑device OCR.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+
+                    Button(action: {
+                        if AppConfig.useLocalSampleReceipt {
+                            Task { await processSample() }
+                        } else {
+                            showCamera = true
+                        }
+                    }) {
+                        Label("Scan Receipt", systemImage: "camera.fill")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(isProcessing)
+                }
+                .padding(.horizontal)
+                .padding(.bottom)
+            }
             .sheet(isPresented: $showCamera) {
                 ImagePicker(sourceType: .camera) { image in
                     Task { await process(image: image) }
