@@ -1,6 +1,9 @@
 import UIKit
 
+/// Utilities for supplying a sample receipt image during local testing.
 enum SampleImageProvider {
+    /// Returns a sample image. If an asset named `receipt-ocr-original` exists,
+    /// it will be used; otherwise a synthetic image is generated.
     static func sampleReceiptImage() -> UIImage {
         if let asset = UIImage(named: "receipt-ocr-original") {
             return asset
@@ -17,6 +20,9 @@ enum SampleImageProvider {
         "Thank you!"
     ]
 
+    /// Generates a simple image drawing the provided lines in a monospaced font.
+    /// - Parameter lines: Lines to render.
+    /// - Returns: A `UIImage` suitable for OCR.
     private static func generateTextImage(lines: [String]) -> UIImage {
         let width: CGFloat = 1024
         let margin: CGFloat = 40
@@ -51,4 +57,3 @@ enum SampleImageProvider {
         }
     }
 }
-

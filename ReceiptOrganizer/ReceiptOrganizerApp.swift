@@ -8,6 +8,7 @@
 import SwiftUI
 
 @main
+/// Application entry point.
 struct ReceiptOrganizerApp: App {
     @StateObject private var store = ReceiptStore()
     var body: some Scene {

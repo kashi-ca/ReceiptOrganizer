@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// Displays previously scanned receipts and allows deletion.
 struct HistoryView: View {
     @EnvironmentObject private var store: ReceiptStore
     @State private var showClearAlert = false
@@ -50,6 +51,8 @@ struct HistoryView: View {
         }
     }
 
+    /// Handles swipe-to-delete for rows in the list.
+    /// - Parameter offsets: Indexes provided by `List.onDelete`.
     private func delete(_ offsets: IndexSet) {
         store.remove(at: offsets)
     }

@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// Shows the full list of recognized lines for a specific receipt.
 struct ReceiptDetailView: View {
     let receipt: Receipt
 
@@ -27,4 +28,3 @@ struct ReceiptDetailView: View {
         ])
     )
 }
-

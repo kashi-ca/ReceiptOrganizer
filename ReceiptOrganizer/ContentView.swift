@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+/// Root view hosting the Scan and History tabs.
 struct ContentView: View {
     @EnvironmentObject private var store: ReceiptStore
 

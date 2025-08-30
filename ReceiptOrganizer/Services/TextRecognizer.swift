@@ -2,11 +2,20 @@ import Foundation
 import Vision
 import UIKit
 
+/// Errors thrown by `TextRecognizer`.
 enum TextRecognitionError: Error {
+    /// The provided image could not produce a `CGImage` for Vision.
     case cgImageUnavailable
 }
 
+/// Thin async wrapper around Vision to recognize text lines from a `UIImage`.
 struct TextRecognizer {
+    /// Performs on-device OCR and returns the best candidate string for each line.
+    /// - Parameters:
+    ///   - image: Source image to analyze.
+    ///   - languages: BCP-47 language codes prioritized for recognition (default: en_US).
+    /// - Returns: An array of recognized lines in reading order.
+    /// - Throws: Any `VNImageRequestHandler`/Vision error, or `TextRecognitionError`.
     static func recognizeLines(in image: UIImage, languages: [String] = ["en_US"]) async throws -> [String] {
         guard let cgImage = image.cgImage else { throw TextRecognitionError.cgImageUnavailable }
 
@@ -35,4 +44,3 @@ struct TextRecognizer {
         }
     }
 }
-

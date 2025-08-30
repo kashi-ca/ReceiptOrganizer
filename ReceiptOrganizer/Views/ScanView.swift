@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// Screen for capturing a receipt image and performing OCR.
 struct ScanView: View {
     @EnvironmentObject private var store: ReceiptStore
     @State private var showCamera = false
@@ -69,6 +70,8 @@ struct ScanView: View {
         }
     }
 
+    /// Runs OCR against a captured image and saves a new receipt.
+    /// - Parameter image: The image to process.
     @MainActor
     private func process(image: UIImage) async {
         isProcessing = true
@@ -82,6 +85,7 @@ struct ScanView: View {
         }
     }
 
+    /// Generates/loads a sample image, performs OCR, and saves a new receipt.
     @MainActor
     private func processSample() async {
         isProcessing = true
@@ -96,6 +100,7 @@ struct ScanView: View {
         }
     }
 
+    /// Briefly displays a confirmation message indicating the receipt was saved.
     @MainActor
     private func showSavedMessageTemporarily() {
         withAnimation { savedMessageVisible = true }
