@@ -2,7 +2,7 @@ import UIKit
 
 enum SampleImageProvider {
     static func sampleReceiptImage() -> UIImage {
-        if let asset = UIImage(named: "SampleReceipt") {
+        if let asset = UIImage(named: "receipt-ocr-original") {
             return asset
         }
         return generateTextImage(lines: defaultLines)
