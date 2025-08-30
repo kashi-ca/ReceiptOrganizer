@@ -29,7 +29,7 @@ struct ScanView: View {
 
                 if isProcessing {
                     ProgressView("Recognizing text…")
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .frame(maxWidth: .infinity, alignment: .center)
                 }
 
                 ContentUnavailableView("Ready to scan", systemImage: "doc.text.viewfinder", description: Text("Results are saved to History."))
