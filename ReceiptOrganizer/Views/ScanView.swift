@@ -14,7 +14,13 @@ struct ScanView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
 
-                Button(action: { showCamera = true }) {
+                Button(action: {
+                    if AppConfig.useLocalSampleReceipt {
+                        Task { await processSample() }
+                    } else {
+                        showCamera = true
+                    }
+                }) {
                     Label("Scan Receipt", systemImage: "camera.fill")
                         .frame(maxWidth: .infinity)
                 }
@@ -67,10 +73,23 @@ struct ScanView: View {
             errorMessage = error.localizedDescription
         }
     }
+
+    @MainActor
+    private func processSample() async {
+        isProcessing = true
+        defer { isProcessing = false }
+        let image = SampleImageProvider.sampleReceiptImage()
+        do {
+            let lines = try await TextRecognizer.recognizeLines(in: image)
+            lastLines = lines
+            store.add(lines: lines)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
 }
 
 #Preview {
     ScanView()
         .environmentObject(ReceiptStore())
 }
-
