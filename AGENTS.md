@@ -8,10 +8,10 @@
 
 ## Build, Test, and Development Commands
 - Open in Xcode: `open ReceiptOrganizer.xcodeproj`
-- Build (generic sim): `xcodebuild -project ReceiptOrganizer.xcodeproj -scheme ReceiptOrganizer -destination 'generic/platform=iOS Simulator' build`
-- Build (iPhone 16 Pro): `xcodebuild -project ReceiptOrganizer.xcodeproj -scheme ReceiptOrganizer -destination 'platform=iOS Simulator,name=iPhone 16 Pro' build`
-- Run tests (when a test target exists): `xcodebuild test -project ReceiptOrganizer.xcodeproj -scheme ReceiptOrganizer -destination 'platform=iOS Simulator,name=iPhone 16 Pro'`
-- SwiftUI previews: edit and run previews in Xcode; keep preview code lightweight and deterministic.
+- Build (default – iPhone 16 Pro): `xcodebuild -project ReceiptOrganizer.xcodeproj -scheme ReceiptOrganizer -destination 'platform=iOS Simulator,name=iPhone 16 Pro' build`
+- Tests (when a test target exists): `xcodebuild test -project ReceiptOrganizer.xcodeproj -scheme ReceiptOrganizer -destination 'platform=iOS Simulator,name=iPhone 16 Pro'`
+- Optional generic sim build: `xcodebuild -project ReceiptOrganizer.xcodeproj -scheme ReceiptOrganizer -destination 'generic/platform=iOS Simulator' build`
+- SwiftUI previews: run in Xcode; keep previews deterministic.
 
 ## Coding Style & Naming Conventions
 - Swift 6; Observable pattern for view models.
