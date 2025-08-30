@@ -1,12 +1,11 @@
 import SwiftUI
 
 struct ScanView: View {
-    var onScanComplete: (() -> Void)? = nil
     @EnvironmentObject private var store: ReceiptStore
     @State private var showCamera = false
     @State private var isProcessing = false
-    @State private var lastLines: [String] = []
     @State private var errorMessage: String?
+    @State private var savedMessageVisible = false
 
     var body: some View {
         NavigationStack {
@@ -33,18 +32,14 @@ struct ScanView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
-                if !lastLines.isEmpty {
-                    List {
-                        Section("Extracted Lines") {
-                            ForEach(lastLines, id: \.self) { line in
-                                Text(line)
-                                    .textSelection(.enabled)
-                            }
-                        }
-                    }
-                } else {
-                    ContentUnavailableView("No scan yet", systemImage: "doc.text.viewfinder", description: Text("Tap Scan Receipt to begin."))
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                ContentUnavailableView("Ready to scan", systemImage: "doc.text.viewfinder", description: Text("Results are saved to History."))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .opacity(isProcessing ? 0.4 : 1)
+
+                if savedMessageVisible {
+                    Label("Saved to History", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                        .transition(.opacity)
                 }
             }
             .padding()
@@ -68,9 +63,8 @@ struct ScanView: View {
         defer { isProcessing = false }
         do {
             let lines = try await TextRecognizer.recognizeLines(in: image)
-            lastLines = lines
             store.add(lines: lines)
-            onScanComplete?()
+            showSavedMessageTemporarily()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -83,11 +77,19 @@ struct ScanView: View {
         let image = SampleImageProvider.sampleReceiptImage()
         do {
             let lines = try await TextRecognizer.recognizeLines(in: image)
-            lastLines = lines
             store.add(lines: lines)
-            onScanComplete?()
+            showSavedMessageTemporarily()
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+
+    @MainActor
+    private func showSavedMessageTemporarily() {
+        withAnimation { savedMessageVisible = true }
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
+            withAnimation { savedMessageVisible = false }
         }
     }
 }
