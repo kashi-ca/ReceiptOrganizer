@@ -6,10 +6,15 @@ import UIKit
 enum TextRecognitionError: Error {
     /// The provided image could not produce a `CGImage` for Vision.
     case cgImageUnavailable
+    case cannotProcessImage
 }
 
 /// Thin async wrapper around Vision to recognize text lines from a `UIImage`.
 struct TextRecognizer {
+    struct Line {
+        let text: String
+        let yBounds: Double
+    }
     /// Performs on-device OCR and returns the best candidate string for each line.
     /// - Parameters:
     ///   - image: Source image to analyze.
@@ -19,28 +24,16 @@ struct TextRecognizer {
     static func recognizeLines(in image: UIImage, languages: [String] = ["en_US"]) async throws -> [String] {
         guard let cgImage = image.cgImage else { throw TextRecognitionError.cgImageUnavailable }
 
-        return try await withCheckedThrowingContinuation { continuation in
-            let request = VNRecognizeTextRequest { request, error in
-                if let error = error {
-                    continuation.resume(throwing: error)
-                    return
-                }
-                let results = (request.results as? [VNRecognizedTextObservation]) ?? []
-                let lines: [String] = results.compactMap { $0.topCandidates(1).first?.string }
-                continuation.resume(returning: lines)
-            }
-            request.recognitionLevel = .accurate
-            request.usesLanguageCorrection = true
-            request.recognitionLanguages = languages
+        var request = RecognizeTextRequest()
+        request.automaticallyDetectsLanguage = true
+        request.usesLanguageCorrection = true
+        request.recognitionLanguages = languages.map { .init(identifier: $0) }
 
-            let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
-            DispatchQueue.global(qos: .userInitiated).async {
-                do {
-                    try handler.perform([request])
-                } catch {
-                    continuation.resume(throwing: error)
-                }
-            }
+        let results = try await request.perform(on: cgImage)
+        let lines = results.map { observationResult in
+            observationResult.topCandidates(1).first?.string
         }
+
+        return []
     }
 }
