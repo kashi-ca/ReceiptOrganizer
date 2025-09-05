@@ -5,26 +5,51 @@ import SwiftUI
 struct ReceiptDetailView: View {
     let receipt: Receipt
 
+    private func norm(_ s: String) -> String {
+        s.lowercased().replacingOccurrences(of: " ", with: "").replacingOccurrences(of: "-", with: "")
+    }
+
     private var totalLines: [String] {
         receipt.lines.filter { line in
-            let lower = line.lowercased()
-            let normalized = lower.replacingOccurrences(of: " ", with: "").replacingOccurrences(of: "-", with: "")
+            let normalized = norm(line)
             return normalized.contains("total") && !normalized.contains("subtotal")
         }
     }
 
+    private var subtotalLines: [String] {
+        receipt.lines.filter { norm($0).contains("subtotal") }
+    }
+
+    private var taxLines: [String] {
+        receipt.lines.filter { norm($0).contains("tax") }
+    }
+
     var body: some View {
         List {
+            if !subtotalLines.isEmpty {
+                Section("Subtotal") {
+                    ForEach(subtotalLines, id: \.self) { line in
+                        Text(line).textSelection(.enabled)
+                    }
+                }
+            }
+
+            if !taxLines.isEmpty {
+                Section("Tax") {
+                    ForEach(taxLines, id: \.self) { line in
+                        Text(line).textSelection(.enabled)
+                    }
+                }
+            }
+
             if totalLines.isEmpty {
-                Section("Totals") {
-                    Text("No totals found")
-                        .foregroundStyle(.secondary)
+                Section("Total") {
+                    Text("No total found").foregroundStyle(.secondary)
                 }
             } else {
-                Section("Totals") {
+                Section("Total") {
                     ForEach(totalLines, id: \.self) { line in
-                        Text(line)
-                            .textSelection(.enabled)
+                        Text(line).textSelection(.enabled)
                     }
                 }
             }
