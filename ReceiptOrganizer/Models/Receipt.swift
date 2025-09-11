@@ -25,4 +25,75 @@ struct Receipt: Identifiable, Codable, Equatable, Hashable {
         lines.first?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false ?
             String(lines.first!) : "Receipt"
     }
+
+    // MARK: - Line Classification
+
+    /// Classification of a receipt line.
+    enum LineType: String, Codable, Equatable, Hashable {
+        case normal
+        case subtotal
+        case total
+    }
+
+    /// A parsed line with derived classification and cleaned text.
+    struct TypedLine: Equatable, Hashable, Codable {
+        /// The original OCR line text.
+        let original: String
+        /// The cleaned text with labels like "Subtotal"/"Total" removed.
+        let text: String
+        /// The derived classification for this line.
+        let type: LineType
+    }
+
+    /// Normalizes a string for matching (lowercased, no spaces/hyphens).
+    private func normalizedKey(_ s: String) -> String {
+        s.lowercased()
+            .replacingOccurrences(of: " ", with: "")
+            .replacingOccurrences(of: "-", with: "")
+    }
+
+    /// Returns the derived classification for a raw line based on keywords.
+    private func classify(_ line: String) -> LineType {
+        let key = normalizedKey(line)
+        if key.contains("subtotal") { return .subtotal }
+        if key.contains("total") { return .total }
+        return .normal
+    }
+
+    /// Removes the label (Subtotal/Total) and adjoining punctuation from a line and trims whitespace.
+    private func strippedLabel(from line: String, type: LineType) -> String {
+        let pattern: String
+        switch type {
+        case .subtotal:
+            // sub total, sub-total, subtotal with optional trailing punctuation
+            pattern = "(?i)\\bsub\\s*-?\\s*total\\b\\s*[:\\-=]*\\s*"
+        case .total:
+            // total with optional trailing punctuation
+            pattern = "(?i)\\btotal\\b\\s*[:\\-=]*\\s*"
+        case .normal:
+            return line.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        guard let regex = try? NSRegularExpression(pattern: pattern) else {
+            return line.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        let ns = line as NSString
+        let range = NSRange(location: 0, length: ns.length)
+        let cleaned = regex.stringByReplacingMatches(in: line, options: [], range: range, withTemplate: "")
+        return cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Lines parsed into typed entries with labels removed where applicable.
+    var typedLines: [TypedLine] {
+        lines.map { raw in
+            let t = classify(raw)
+            let cleaned = strippedLabel(from: raw, type: t)
+            return TypedLine(original: raw, text: cleaned, type: t)
+        }
+    }
+
+    /// Convenience: cleaned texts for subtotal lines.
+    var subtotalItems: [String] { typedLines.filter { $0.type == .subtotal }.map { $0.text } }
+    /// Convenience: cleaned texts for total lines.
+    var totalItems: [String] { typedLines.filter { $0.type == .total }.map { $0.text } }
 }

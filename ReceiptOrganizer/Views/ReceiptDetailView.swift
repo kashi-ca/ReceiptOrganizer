@@ -10,18 +10,15 @@ struct ReceiptDetailView: View {
     }
 
     private var totalLines: [String] {
-        receipt.lines.filter { line in
-            let normalized = norm(line)
-            return normalized.contains("total") && !normalized.contains("subtotal")
-        }
+        receipt.totalItems
     }
 
     private var subtotalLines: [String] {
-        receipt.lines.filter { norm($0).contains("subtotal") }
+        receipt.subtotalItems
     }
 
     private var taxLines: [String] {
-        receipt.lines.filter { norm($0).contains("tax") }
+        receipt.typedLines.map { $0.text }.filter { norm($0).contains("tax") }
     }
 
     var body: some View {
