@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 /// SwiftUI wrapper for `UIImagePickerController` to capture or select a photo.
 struct ImagePicker: UIViewControllerRepresentable {

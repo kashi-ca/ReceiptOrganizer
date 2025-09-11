@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 /// Screen for capturing a receipt image and performing OCR.
 struct ScanView: View {
@@ -112,6 +113,13 @@ struct ScanView: View {
 }
 
 #Preview {
-    ScanView()
-        .environmentObject(ReceiptStore())
+    do {
+        let container = try ModelContainer(for: ReceiptRecord.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        return ScanView()
+            .modelContainer(container)
+            .environmentObject(ReceiptStore(modelContext: container.mainContext))
+    } catch {
+        return ScanView()
+            .environmentObject(ReceiptStore(modelContext: try! ModelContainer(for: ReceiptRecord.self).mainContext))
+    }
 }

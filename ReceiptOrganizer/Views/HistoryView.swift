@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 /// Displays previously scanned receipts and allows deletion.
 struct HistoryView: View {
@@ -115,6 +116,13 @@ struct HistoryView: View {
 }
 
 #Preview {
-    HistoryView()
-        .environmentObject(ReceiptStore())
+    do {
+        let container = try ModelContainer(for: ReceiptRecord.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        return HistoryView()
+            .modelContainer(container)
+            .environmentObject(ReceiptStore(modelContext: container.mainContext))
+    } catch {
+        return HistoryView()
+            .environmentObject(ReceiptStore(modelContext: try! ModelContainer(for: ReceiptRecord.self).mainContext))
+    }
 }

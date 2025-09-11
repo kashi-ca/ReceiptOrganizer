@@ -1,6 +1,5 @@
 import Foundation
 import Vision
-import UIKit
 
 /// Errors thrown by `TextRecognizer`.
 enum TextRecognitionError: Error {
