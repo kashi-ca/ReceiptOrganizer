@@ -18,10 +18,6 @@ struct TextRecognizer {
     /// - Throws: Any `VNImageRequestHandler`/Vision error, or `TextRecognitionError`.
     static func recognizeLines(in image: UIImage, languages: [String] = ["en_US"]) async throws -> [String] {
         guard let cgImage = image.cgImage else { throw TextRecognitionError.cgImageUnavailable }
-
-        let imageWidth = CGFloat(cgImage.width)
-        let imageHeight = CGFloat(cgImage.height)
-
         var request = RecognizeTextRequest()
 
         request.recognitionLevel = .accurate

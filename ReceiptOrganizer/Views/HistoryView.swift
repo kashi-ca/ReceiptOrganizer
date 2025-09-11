@@ -20,7 +20,7 @@ struct HistoryView: View {
                                             .font(.headline)
                                             .lineLimit(1)
                                         Spacer()
-                                        if let total = totalLine(for: receipt) {
+                                        if let total = totalAmount(for: receipt) {
                                             Text(total)
                                                 .font(.subheadline)
                                                 .lineLimit(1)
@@ -69,6 +69,42 @@ struct HistoryView: View {
             return normalized.contains("total") && !normalized.contains("subtotal")
         }
         return filtered.last
+    }
+
+    /// Returns just the amount portion from the total line, removing the word "Total" and punctuation.
+    private func totalAmount(for receipt: Receipt) -> String? {
+        guard let line = totalLine(for: receipt) else { return nil }
+        if let currency = extractCurrency(from: line) {
+            return currency
+        }
+        // Fallback: strip the leading "Total" label and punctuation
+        return strippedTextAfterTotal(from: line)
+    }
+
+    /// Tries to find a currency-like token (e.g., "$7.02" or "7.02") in the string.
+    private func extractCurrency(from text: String) -> String? {
+        let pattern = #"\$?\s*[0-9]+(?:[.,][0-9]{2})?"#
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
+        let ns = text as NSString
+        let range = NSRange(location: 0, length: ns.length)
+        let matches = regex.matches(in: text, options: [], range: range)
+        guard let last = matches.last else { return nil }
+        let value = ns.substring(with: last.range)
+        return value.trimmingCharacters(in: .whitespaces)
+    }
+
+    /// Removes the leading "Total" label and any following punctuation like ":" or "-".
+    private func strippedTextAfterTotal(from text: String) -> String {
+        var s = text
+        if let r = s.range(of: "total", options: .caseInsensitive) {
+            s = String(s[r.upperBound...])
+        }
+        s = s.trimmingCharacters(in: .whitespacesAndNewlines)
+        while let first = s.first, [":", "-", "="] .contains(first) {
+            s.removeFirst()
+            s = s.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return s
     }
 
     /// Handles swipe-to-delete for rows in the list.
