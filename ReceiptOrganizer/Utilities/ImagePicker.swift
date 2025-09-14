@@ -1,51 +1,66 @@
 import SwiftUI
+import PhotosUI
+import CoreGraphics
+import ImageIO
 
-/// SwiftUI wrapper for `UIImagePickerController` to capture or select a photo.
-struct ImagePicker: UIViewControllerRepresentable {
-    /// The source type to use (camera by default; falls back to photo library if unavailable).
-    var sourceType: UIImagePickerController.SourceType = .camera
-    /// Callback with the selected/captured image.
-    var onImagePicked: (UIImage) -> Void
+/// SwiftUI-native image picker using `PhotosPicker`.
+/// Presents a simple UI to select an image from the photo library and
+/// returns a `CGImage` via the `onImagePicked` callback.
+struct ImagePicker: View {
+    /// Callback with the selected image.
+    var onImagePicked: (CGImage) -> Void
+
     @Environment(\.dismiss) private var dismiss
+    @State private var selectedItem: PhotosPickerItem?
+    @State private var isLoading = false
 
-    /// Creates the coordinator to bridge UIKit delegate callbacks.
-    func makeCoordinator() -> Coordinator {
-        Coordinator(onImagePicked: onImagePicked, dismiss: dismiss)
-    }
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 16) {
+                PhotosPicker(selection: $selectedItem, matching: .images, preferredItemEncoding: .automatic) {
+                    Label("Choose Photo", systemImage: "photo.on.rectangle.angled")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(isLoading)
 
-    /// Configures and returns the underlying `UIImagePickerController`.
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker = UIImagePickerController()
-        picker.sourceType = UIImagePickerController.isSourceTypeAvailable(sourceType) ? sourceType : .photoLibrary
-        picker.delegate = context.coordinator
-        picker.allowsEditing = false
-        return picker
-    }
+                if isLoading {
+                    ProgressView("Loading…")
+                        .controlSize(.large)
+                }
 
-    /// No updates needed after creation.
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
-
-    /// Coordinator that forwards delegate events to SwiftUI closures.
-    final class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
-        let onImagePicked: (UIImage) -> Void
-        let dismiss: DismissAction
-
-        init(onImagePicked: @escaping (UIImage) -> Void, dismiss: DismissAction) {
-            self.onImagePicked = onImagePicked
-            self.dismiss = dismiss
-        }
-
-        /// Handles successful capture/selection and dismisses the picker.
-        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
-            if let image = info[.originalImage] as? UIImage {
-                onImagePicked(image)
+                Text("Select a receipt image from your photo library.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
-            dismiss()
+            .padding()
+            .navigationTitle("Select Photo")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
         }
+        .onChange(of: selectedItem) { newItem in
+            if let item = newItem { Task { await loadImage(from: item) } }
+        }
+    }
 
-        /// Handles cancellation.
-        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            dismiss()
+    @MainActor
+    private func loadImage(from item: PhotosPickerItem) async {
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            if let data = try await item.loadTransferable(type: Data.self) {
+                if let source = CGImageSourceCreateWithData(data as CFData, nil),
+                   let cgImage = CGImageSourceCreateImageAtIndex(source, 0, nil) {
+                    onImagePicked(cgImage)
+                    dismiss()
+                    return
+                }
+            }
+        } catch {
+            // Silently fail; caller will remain on picker UI
         }
     }
 }

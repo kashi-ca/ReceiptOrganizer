@@ -7,7 +7,7 @@ enum TextRecognitionError: Error {
     case cgImageUnavailable
 }
 
-/// Thin async wrapper around Vision to recognize text lines from a `UIImage`.
+/// Thin async wrapper around Vision to recognize text lines from a `CGImage`.
 struct TextRecognizer {
     /// Performs on-device OCR and returns strings grouped into visual lines by Y position.
     /// - Parameters:
@@ -15,15 +15,14 @@ struct TextRecognizer {
     ///   - languages: BCP-47 language codes prioritized for recognition (default: en_US).
     /// - Returns: An array of recognized lines in reading order (top-to-bottom, left-to-right).
     /// - Throws: Any `VNImageRequestHandler`/Vision error, or `TextRecognitionError`.
-    static func recognizeLines(in image: UIImage, languages: [String] = ["en_US"]) async throws -> [String] {
-        guard let cgImage = image.cgImage else { throw TextRecognitionError.cgImageUnavailable }
+    static func recognizeLines(in image: CGImage, languages: [String] = ["en_US"]) async throws -> [String] {
         var request = RecognizeTextRequest()
 
         request.recognitionLevel = .accurate
         request.usesLanguageCorrection = true
         request.recognitionLanguages = languages.map { .init(identifier: $0)}
 
-        let observations = try await request.perform(on: cgImage)
+        let observations = try await request.perform(on: image)
 
         // Use a vertical anchor from the bounding box. Here we choose the bottom (minY).
         struct Item { let text: String; let anchorY: CGFloat; let minX: CGFloat }

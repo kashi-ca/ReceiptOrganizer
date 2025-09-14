@@ -4,7 +4,7 @@ import SwiftData
 /// Screen for capturing a receipt image and performing OCR.
 struct ScanView: View {
     @EnvironmentObject private var store: ReceiptStore
-    @State private var showCamera = false
+    @State private var showPicker = false
     @State private var isProcessing = false
     @State private var errorMessage: String?
     @State private var savedMessageVisible = false
@@ -38,7 +38,7 @@ struct ScanView: View {
             .navigationTitle("Scan")
             .safeAreaInset(edge: .top) {
                 VStack(spacing: 12) {
-                    Text("Scan a receipt using your camera. Lines will be extracted with on‑device OCR.")
+                    Text("Select a receipt photo. Lines will be extracted with on‑device OCR.")
                         .font(.callout)
                         .foregroundStyle(.secondary)
 
@@ -46,10 +46,10 @@ struct ScanView: View {
                         if AppConfig.useLocalSampleReceipt {
                             Task { await processSample() }
                         } else {
-                            showCamera = true
+                            showPicker = true
                         }
                     }) {
-                        Label("Scan Receipt", systemImage: "camera.fill")
+                        Label("Scan Receipt", systemImage: "photo.on.rectangle.angled")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
@@ -58,9 +58,9 @@ struct ScanView: View {
                 .padding(.horizontal)
                 .padding(.bottom)
             }
-            .sheet(isPresented: $showCamera) {
-                ImagePicker(sourceType: .camera) { image in
-                    Task { await process(image: image) }
+            .sheet(isPresented: $showPicker) {
+                ImagePicker { cgImage in
+                    Task { await process(image: cgImage) }
                 }
             }
             .alert("Recognition Failed", isPresented: .constant(errorMessage != nil), actions: {
@@ -74,7 +74,7 @@ struct ScanView: View {
     /// Runs OCR against a captured image and saves a new receipt.
     /// - Parameter image: The image to process.
     @MainActor
-    private func process(image: UIImage) async {
+    private func process(image: CGImage) async {
         isProcessing = true
         defer { isProcessing = false }
         do {
@@ -91,13 +91,14 @@ struct ScanView: View {
     private func processSample() async {
         isProcessing = true
         defer { isProcessing = false }
-        let image = SampleImageProvider.sampleReceiptImage()
-        do {
-            let lines = try await TextRecognizer.recognizeLines(in: image)
-            store.add(lines: lines)
-            showSavedMessageTemporarily()
-        } catch {
-            errorMessage = error.localizedDescription
+        if let image = SampleImageProvider.sampleReceiptImage() {
+            do {
+                let lines = try await TextRecognizer.recognizeLines(in: image)
+                store.add(lines: lines)
+                showSavedMessageTemporarily()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
         }
     }
 
