@@ -56,7 +56,7 @@ struct Receipt: Identifiable, Codable, Equatable, Hashable {
     private func classify(_ line: String) -> LineType {
         let key = normalizedKey(line)
         if key.contains("subtotal") { return .subtotal }
-        if key.contains("total") { return .total }
+        if key.contains("total") || key.contains("balance") { return .total }
         return .normal
     }
 
@@ -68,8 +68,8 @@ struct Receipt: Identifiable, Codable, Equatable, Hashable {
             // sub total, sub-total, subtotal with optional trailing punctuation
             pattern = "(?i)\\bsub\\s*-?\\s*total\\b\\s*[:\\-=]*\\s*"
         case .total:
-            // total with optional trailing punctuation
-            pattern = "(?i)\\btotal\\b\\s*[:\\-=]*\\s*"
+            // total or balance with optional trailing punctuation
+            pattern = "(?i)\\b(?:total|balance)\\b\\s*[:\\-=]*\\s*"
         case .normal:
             return line.trimmingCharacters(in: .whitespacesAndNewlines)
         }

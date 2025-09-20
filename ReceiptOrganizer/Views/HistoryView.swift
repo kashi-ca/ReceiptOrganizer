@@ -76,7 +76,9 @@ struct HistoryView: View {
         let filtered = receipt.lines.filter { line in
             let lower = line.lowercased()
             let normalized = lower.replacingOccurrences(of: " ", with: "").replacingOccurrences(of: "-", with: "")
-            return normalized.contains("total") && !normalized.contains("subtotal")
+            let isTotalOrBalance = normalized.contains("total") || normalized.contains("balance")
+            let isSubtotal = normalized.contains("subtotal")
+            return isTotalOrBalance && !isSubtotal
         }
         return filtered.last
     }
