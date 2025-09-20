@@ -93,14 +93,17 @@ struct HistoryView: View {
 
     /// Tries to find a currency-like token (e.g., "$7.02" or "7.02") in the string.
     private func extractCurrency(from text: String) -> String? {
-        let pattern = #"\$?\s*[0-9]+(?:[.,][0-9]{2})?"#
+        // Remove all whitespace to avoid spaces between digits from OCR
+        let cleaned = text.filter { !$0.isWhitespace }
+        let pattern = #"\$?[0-9]+(?:[.,][0-9]{2})?"#
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
-        let ns = text as NSString
+        let ns = cleaned as NSString
         let range = NSRange(location: 0, length: ns.length)
-        let matches = regex.matches(in: text, options: [], range: range)
+        let matches = regex.matches(in: cleaned, options: [], range: range)
         guard let last = matches.last else { return nil }
         let value = ns.substring(with: last.range)
-        return value.trimmingCharacters(in: .whitespaces)
+        // Drop any leading dollar sign
+        return value.replacingOccurrences(of: "$", with: "")
     }
 
     /// Removes the leading "Total" label and any following punctuation like ":" or "-".
@@ -114,7 +117,10 @@ struct HistoryView: View {
             s.removeFirst()
             s = s.trimmingCharacters(in: .whitespacesAndNewlines)
         }
-        return s
+        // Remove all whitespace to avoid spaces between digits from OCR
+        var compact = s.filter { !$0.isWhitespace }
+        if compact.first == "$" { compact.removeFirst() }
+        return compact
     }
 
     /// Handles swipe-to-delete for rows in the list.
