@@ -34,6 +34,15 @@ struct HistoryView: View {
                                         .foregroundStyle(.secondary)
                                 }
                             }
+                            .tag(receipt.id)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    store.delete(receipt)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                                .accessibilityIdentifier("history.row.delete")
+                            }
                         }
                         .onDelete(perform: delete)
                     }
