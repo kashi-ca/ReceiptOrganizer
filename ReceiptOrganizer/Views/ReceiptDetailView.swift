@@ -57,7 +57,7 @@ struct ReceiptDetailView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     NavigationLink {
-                        ReceiptDetailsView(receipt: receipt)
+                        ReceiptDetailLinesView(receipt: receipt)
                     } label: {
                         Label("Receipt Details", systemImage: "doc.text.magnifyingglass")
                     }

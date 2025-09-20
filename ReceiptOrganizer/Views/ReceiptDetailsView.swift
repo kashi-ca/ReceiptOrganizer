@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Displays the complete set of recognized lines for a receipt.
-struct ReceiptDetailsView: View {
+struct ReceiptDetailLinesView: View {
     let receipt: Receipt
 
     var body: some View {
@@ -20,7 +20,7 @@ struct ReceiptDetailsView: View {
 
 #Preview {
     NavigationStack {
-        ReceiptDetailsView(
+        ReceiptDetailLinesView(
             receipt: Receipt(lines: [
                 "Store Name",
                 "Item 1   $1.99",
