@@ -5,34 +5,57 @@ import SwiftUI
 struct ReceiptDetailView: View {
     let receipt: Receipt
 
-    private func norm(_ s: String) -> String {
-        s.lowercased().replacingOccurrences(of: " ", with: "").replacingOccurrences(of: "-", with: "")
-    }
+    // removed: compactNumericSpaces (replaced by numberPreservingDecimal)
 
-    /// Compacts whitespace within numeric/currency tokens (e.g., "$7. 02" -> "$7.02").
-    private func compactNumericSpaces(in text: String) -> String {
-        let pattern = #"\$?[0-9][0-9\s\.,]*"#
-        guard let regex = try? NSRegularExpression(pattern: pattern) else { return text }
-        var result = text
-        var ns = result as NSString
-        let range = NSRange(location: 0, length: ns.length)
-        let matches = regex.matches(in: result, options: [], range: range)
-        for m in matches.reversed() {
-            let token = ns.substring(with: m.range)
-            let compact = token.filter { !$0.isWhitespace }
-            result = ns.replacingCharacters(in: m.range, with: compact)
-            ns = result as NSString
+    /// Normalizes a numeric string by removing currency symbols/spaces and preserving at most one decimal separator.
+    private func numberPreservingDecimal(_ s: String) -> String {
+        let t = s.replacingOccurrences(of: "$", with: "").filter { !$0.isWhitespace }
+        if t.contains(".") {
+            let lastDot = t.lastIndex(of: ".")
+            var out = String()
+            var idx = t.startIndex
+            while idx < t.endIndex {
+                let ch = t[idx]
+                if ch.isNumber {
+                    out.append(ch)
+                } else if ch == ".", let lastDot, idx == lastDot {
+                    out.append(".")
+                }
+                idx = t.index(after: idx)
+            }
+            return out
+        } else if t.contains(",") {
+            let lastComma = t.lastIndex(of: ",")
+            var out = String()
+            var idx = t.startIndex
+            while idx < t.endIndex {
+                let ch = t[idx]
+                if ch.isNumber {
+                    out.append(ch)
+                } else if ch == ",", let lastComma, idx == lastComma {
+                    out.append(".")
+                }
+                idx = t.index(after: idx)
+            }
+            return out
+        } else {
+            return t.filter { $0.isNumber }
         }
-        return result
     }
 
-    private var totalLines: [String] { receipt.totalItems.map { compactNumericSpaces(in: $0) } }
-
-    private var subtotalLines: [String] { receipt.subtotalItems.map { compactNumericSpaces(in: $0) } }
-
-    private var taxLines: [String] {
-        receipt.typedLines.map { $0.text }.filter { norm($0).contains("tax") }.map { compactNumericSpaces(in: $0) }
+    private var totalLines: [String] {
+        receipt.totalItems
+            .map { numberPreservingDecimal($0) }
+            .filter { !$0.isEmpty }
     }
+
+    private var subtotalLines: [String] {
+        receipt.subtotalItems
+            .map { numberPreservingDecimal($0) }
+            .filter { !$0.isEmpty }
+    }
+
+    // Tax lines are temporarily hidden per request.
 
     var body: some View {
         List {
@@ -44,13 +67,7 @@ struct ReceiptDetailView: View {
                 }
             }
 
-            if !taxLines.isEmpty {
-                Section("Tax") {
-                    ForEach(taxLines, id: \.self) { line in
-                        Text(line).textSelection(.enabled)
-                    }
-                }
-            }
+            // Tax section intentionally removed
 
             if totalLines.isEmpty {
                 Section("Total") {

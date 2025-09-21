@@ -71,6 +71,43 @@ struct HistoryView: View {
         }
     }
 
+    /// Normalizes a numeric string by removing currency symbols/spaces and preserving at most one decimal separator.
+    /// - Keeps digits and a single decimal point. If the string uses ',' as decimal and no '.', converts the last ',' to '.'.
+    private func numberPreservingDecimal(from s: String) -> String {
+        let t = s.replacingOccurrences(of: "$", with: "").filter { !$0.isWhitespace }
+        if t.contains(".") {
+            let lastDot = t.lastIndex(of: ".")
+            var out = String()
+            var idx = t.startIndex
+            while idx < t.endIndex {
+                let ch = t[idx]
+                if ch.isNumber {
+                    out.append(ch)
+                } else if ch == ".", let lastDot, idx == lastDot {
+                    out.append(".")
+                }
+                idx = t.index(after: idx)
+            }
+            return out
+        } else if t.contains(",") {
+            let lastComma = t.lastIndex(of: ",")
+            var out = String()
+            var idx = t.startIndex
+            while idx < t.endIndex {
+                let ch = t[idx]
+                if ch.isNumber {
+                    out.append(ch)
+                } else if ch == ",", let lastComma, idx == lastComma {
+                    out.append(".")
+                }
+                idx = t.index(after: idx)
+            }
+            return out
+        } else {
+            return t.filter { $0.isNumber }
+        }
+    }
+
     /// Extracts the most relevant total line for display, excluding 'Subtotal'.
     private func totalLine(for receipt: Receipt) -> String? {
         let filtered = receipt.lines.filter { line in
@@ -87,10 +124,13 @@ struct HistoryView: View {
     private func totalAmount(for receipt: Receipt) -> String? {
         guard let line = totalLine(for: receipt) else { return nil }
         if let currency = extractCurrency(from: line) {
-            return currency
+            let n = numberPreservingDecimal(from: currency)
+            return n.isEmpty ? nil : n
         }
         // Fallback: strip the leading "Total" label and punctuation
-        return strippedTextAfterTotal(from: line)
+        let stripped = strippedTextAfterTotal(from: line)
+        let n = numberPreservingDecimal(from: stripped)
+        return n.isEmpty ? nil : n
     }
 
     /// Tries to find a currency-like token (e.g., "$7.02" or "7.02") in the string.
@@ -108,18 +148,28 @@ struct HistoryView: View {
         return value.replacingOccurrences(of: "$", with: "")
     }
 
-    /// Removes the leading "Total" label and any following punctuation like ":" or "-".
+    /// Removes the leading label ("Total" or "Balance", case-insensitive) and adjoining punctuation like ":", "-", or "=".
     private func strippedTextAfterTotal(from text: String) -> String {
-        var s = text
-        if let r = s.range(of: "total", options: .caseInsensitive) {
-            s = String(s[r.upperBound...])
+        let pattern = "(?i)\\b(?:total|balance)\\b\\s*[:\\-=]*\\s*"
+        if let regex = try? NSRegularExpression(pattern: pattern) {
+            let ns = text as NSString
+            let range = NSRange(location: 0, length: ns.length)
+            if let match = regex.firstMatch(in: text, options: [], range: range) {
+                let start = match.range.location + match.range.length
+                let tail = ns.substring(from: start)
+                // Remove all whitespace to avoid spaces between digits from OCR
+                var compact = tail.filter { !$0.isWhitespace }
+                if compact.first == "$" { compact.removeFirst() }
+                return compact
+            }
         }
+        // Fallback to previous trimming if regex fails
+        var s = text
+        if let r = s.range(of: "total", options: .caseInsensitive) { s = String(s[r.upperBound...]) }
         s = s.trimmingCharacters(in: .whitespacesAndNewlines)
         while let first = s.first, [":", "-", "="] .contains(first) {
-            s.removeFirst()
-            s = s.trimmingCharacters(in: .whitespacesAndNewlines)
+            s.removeFirst(); s = s.trimmingCharacters(in: .whitespacesAndNewlines)
         }
-        // Remove all whitespace to avoid spaces between digits from OCR
         var compact = s.filter { !$0.isWhitespace }
         if compact.first == "$" { compact.removeFirst() }
         return compact
