@@ -8,6 +8,8 @@ struct Receipt: Identifiable, Codable, Equatable, Hashable {
     let date: Date
     /// Ordered list of recognized text lines from OCR.
     let lines: [String]
+    /// Optional user-edited store name override.
+    let editedStoreName: String?
     /// Optional user-edited overrides.
     let editedSubtotal: String?
     let editedTax: String?
@@ -18,10 +20,19 @@ struct Receipt: Identifiable, Codable, Equatable, Hashable {
     ///   - id: Optional explicit identifier (defaults to a new UUID).
     ///   - date: Creation date (defaults to now).
     ///   - lines: Recognized text lines.
-    init(id: UUID = UUID(), date: Date = Date(), lines: [String], editedSubtotal: String? = nil, editedTax: String? = nil, editedTotal: String? = nil) {
+    init(
+        id: UUID = UUID(),
+        date: Date = Date(),
+        lines: [String],
+        editedStoreName: String? = nil,
+        editedSubtotal: String? = nil,
+        editedTax: String? = nil,
+        editedTotal: String? = nil
+    ) {
         self.id = id
         self.date = date
         self.lines = lines
+        self.editedStoreName = editedStoreName
         self.editedSubtotal = editedSubtotal
         self.editedTax = editedTax
         self.editedTotal = editedTotal
@@ -34,7 +45,12 @@ struct Receipt: Identifiable, Codable, Equatable, Hashable {
     }
 
     /// Indicates whether any user edits exist for this receipt.
-    var isEdited: Bool { (editedSubtotal?.isEmpty == false) || (editedTax?.isEmpty == false) || (editedTotal?.isEmpty == false) }
+    var isEdited: Bool {
+        (editedStoreName?.isEmpty == false) ||
+        (editedSubtotal?.isEmpty == false) ||
+        (editedTax?.isEmpty == false) ||
+        (editedTotal?.isEmpty == false)
+    }
 
     // MARK: - Line Classification
 

@@ -10,6 +10,8 @@ final class ReceiptRecord {
     var date: Date
     /// Ordered list of recognized text lines from OCR.
     var lines: [String]
+    /// User-edited override for store name, optional.
+    var editedStoreName: String?
     /// User-edited override for subtotal amount (normalized string), optional.
     var editedSubtotal: String?
     /// User-edited override for tax amount (normalized string), optional.
@@ -17,10 +19,11 @@ final class ReceiptRecord {
     /// User-edited override for total amount (normalized string), optional.
     var editedTotal: String?
 
-    init(id: UUID = UUID(), date: Date = Date(), lines: [String], editedSubtotal: String? = nil, editedTax: String? = nil, editedTotal: String? = nil) {
+    init(id: UUID = UUID(), date: Date = Date(), lines: [String], editedStoreName: String? = nil, editedSubtotal: String? = nil, editedTax: String? = nil, editedTotal: String? = nil) {
         self.id = id
         self.date = date
         self.lines = lines
+        self.editedStoreName = editedStoreName
         self.editedSubtotal = editedSubtotal
         self.editedTax = editedTax
         self.editedTotal = editedTotal
@@ -30,6 +33,14 @@ final class ReceiptRecord {
 extension ReceiptRecord {
     /// Converts to the domain `Receipt` value type.
     func toDomain() -> Receipt {
-        Receipt(id: id, date: date, lines: lines, editedSubtotal: editedSubtotal, editedTax: editedTax, editedTotal: editedTotal)
+        Receipt(
+            id: id,
+            date: date,
+            lines: lines,
+            editedStoreName: editedStoreName,
+            editedSubtotal: editedSubtotal,
+            editedTax: editedTax,
+            editedTotal: editedTotal
+        )
     }
 }

@@ -7,6 +7,7 @@ struct ReceiptDetailView: View {
     let receipt: Receipt
     @EnvironmentObject private var store: ReceiptStore
     @State private var isEditing = false
+    @State private var storeNameText = ""
     @State private var subtotalText = ""
     @State private var taxText = ""
     @State private var totalText = ""
@@ -81,6 +82,7 @@ struct ReceiptDetailView: View {
     }
 
     private func loadEditorDefaults() {
+        storeNameText = liveReceipt.editedStoreName ?? liveReceipt.title
         subtotalText = liveReceipt.editedSubtotal ?? extractedSubtotal ?? ""
         taxText = liveReceipt.editedTax ?? extractedTax ?? ""
         totalText = liveReceipt.editedTotal ?? extractedTotal ?? ""
@@ -98,6 +100,19 @@ struct ReceiptDetailView: View {
             }
 
             Section("Summary") {
+                HStack {
+                    Text("Store")
+                    Spacer()
+                    if isEditing {
+                        TextField("Store Name", text: $storeNameText)
+                            .multilineTextAlignment(.trailing)
+                            .textInputAutocapitalization(.words)
+                            .disableAutocorrection(true)
+                    } else {
+                        Text(liveReceipt.editedStoreName ?? liveReceipt.title)
+                            .foregroundStyle((liveReceipt.editedStoreName != nil) ? .primary : .secondary)
+                    }
+                }
                 HStack {
                     Text("Subtotal")
                     Spacer()
@@ -142,29 +157,9 @@ struct ReceiptDetailView: View {
                 }
             }
 
-            if !subtotalLines.isEmpty {
-                Section("Subtotal") {
-                    ForEach(subtotalLines, id: \.self) { line in
-                        Text(line).textSelection(.enabled)
-                    }
-                }
-            }
-
-            // Tax section intentionally removed
-
-            if totalLines.isEmpty {
-                Section("Total") {
-                    Text("No total found").foregroundStyle(.secondary)
-                }
-            } else {
-                Section("Total") {
-                    ForEach(totalLines, id: \.self) { line in
-                        Text(line).textSelection(.enabled)
-                    }
-                }
-            }
+            // Additional detail sections removed; Summary shows key values.
         }
-        .navigationTitle(receipt.title)
+        .navigationTitle("Receipt")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
@@ -185,7 +180,14 @@ struct ReceiptDetailView: View {
                             let sub = numberPreservingDecimal(subtotalText)
                             let tax = numberPreservingDecimal(taxText)
                             let tot = numberPreservingDecimal(totalText)
-                            store.updateEdits(for: liveReceipt.id, subtotal: sub.isEmpty ? nil : sub, tax: tax.isEmpty ? nil : tax, total: tot.isEmpty ? nil : tot)
+                            let storeName = storeNameText.trimmingCharacters(in: .whitespacesAndNewlines)
+                            store.updateEdits(
+                                for: liveReceipt.id,
+                                storeName: storeName.isEmpty ? nil : storeName,
+                                subtotal: sub.isEmpty ? nil : sub,
+                                tax: tax.isEmpty ? nil : tax,
+                                total: tot.isEmpty ? nil : tot
+                            )
                             isEditing = false
                         } label: {
                             Text("Save")
