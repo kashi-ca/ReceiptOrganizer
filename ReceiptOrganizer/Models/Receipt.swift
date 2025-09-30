@@ -8,16 +8,23 @@ struct Receipt: Identifiable, Codable, Equatable, Hashable {
     let date: Date
     /// Ordered list of recognized text lines from OCR.
     let lines: [String]
+    /// Optional user-edited overrides.
+    let editedSubtotal: String?
+    let editedTax: String?
+    let editedTotal: String?
 
     /// Creates a new receipt from recognized lines.
     /// - Parameters:
     ///   - id: Optional explicit identifier (defaults to a new UUID).
     ///   - date: Creation date (defaults to now).
     ///   - lines: Recognized text lines.
-    init(id: UUID = UUID(), date: Date = Date(), lines: [String]) {
+    init(id: UUID = UUID(), date: Date = Date(), lines: [String], editedSubtotal: String? = nil, editedTax: String? = nil, editedTotal: String? = nil) {
         self.id = id
         self.date = date
         self.lines = lines
+        self.editedSubtotal = editedSubtotal
+        self.editedTax = editedTax
+        self.editedTotal = editedTotal
     }
 
     /// A short title derived from the first non-empty line; falls back to "Receipt".
@@ -25,6 +32,9 @@ struct Receipt: Identifiable, Codable, Equatable, Hashable {
         lines.first?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false ?
             String(lines.first!) : "Receipt"
     }
+
+    /// Indicates whether any user edits exist for this receipt.
+    var isEdited: Bool { (editedSubtotal?.isEmpty == false) || (editedTax?.isEmpty == false) || (editedTotal?.isEmpty == false) }
 
     // MARK: - Line Classification
 

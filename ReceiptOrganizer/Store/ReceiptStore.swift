@@ -87,4 +87,37 @@ final class ReceiptStore: ObservableObject {
             receipts = []
         }
     }
+
+    /// Updates edited values for a given receipt and persists the change.
+    /// Empty strings are treated as nil (no override).
+    func updateEdits(for id: UUID, subtotal: String?, tax: String?, total: String?) {
+        guard let idx = records.firstIndex(where: { $0.id == id }) else { return }
+        let normalize: (String?) -> String? = { value in
+            guard let v = value?.trimmingCharacters(in: .whitespacesAndNewlines), !v.isEmpty else { return nil }
+            return v
+        }
+        records[idx].editedSubtotal = normalize(subtotal)
+        records[idx].editedTax = normalize(tax)
+        records[idx].editedTotal = normalize(total)
+        do {
+            try modelContext.save()
+            receipts[idx] = records[idx].toDomain()
+        } catch {
+            print("Failed to save edits: \(error)")
+        }
+    }
+
+    /// Clears any user edits for the given receipt.
+    func clearEdits(for id: UUID) {
+        guard let idx = records.firstIndex(where: { $0.id == id }) else { return }
+        records[idx].editedSubtotal = nil
+        records[idx].editedTax = nil
+        records[idx].editedTotal = nil
+        do {
+            try modelContext.save()
+            receipts[idx] = records[idx].toDomain()
+        } catch {
+            print("Failed to clear edits: \(error)")
+        }
+    }
 }

@@ -20,6 +20,13 @@ struct HistoryView: View {
                                         Text(receipt.title)
                                             .font(.headline)
                                             .lineLimit(1)
+                                        if receipt.isEdited {
+                                            Image(systemName: "pencil.circle.fill")
+                                                .foregroundStyle(.tint)
+                                                .imageScale(.small)
+                                                .accessibilityLabel("Edited")
+                                                .accessibilityIdentifier("history.row.edited")
+                                        }
                                         Spacer()
                                         if let total = totalAmount(for: receipt) {
                                             Text(total)
@@ -122,6 +129,11 @@ struct HistoryView: View {
 
     /// Returns just the amount portion from the total line, removing the word "Total" and punctuation.
     private func totalAmount(for receipt: Receipt) -> String? {
+        // Prefer user-edited total if available
+        if let edited = receipt.editedTotal, !edited.isEmpty {
+            let n = numberPreservingDecimal(from: edited)
+            return n.isEmpty ? nil : n
+        }
         guard let line = totalLine(for: receipt) else { return nil }
         if let currency = extractCurrency(from: line) {
             let n = numberPreservingDecimal(from: currency)

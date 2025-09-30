@@ -1,9 +1,15 @@
 import SwiftUI
+import SwiftData
 
 /// Shows summary details for a specific receipt. Only displays lines containing "Total"
 /// (case-insensitive) while excluding variants of "Subtotal". Use the menu to view all lines.
 struct ReceiptDetailView: View {
     let receipt: Receipt
+    @EnvironmentObject private var store: ReceiptStore
+    @State private var isEditing = false
+    @State private var subtotalText = ""
+    @State private var taxText = ""
+    @State private var totalText = ""
 
     // removed: compactNumericSpaces (replaced by numberPreservingDecimal)
 
@@ -43,22 +49,99 @@ struct ReceiptDetailView: View {
         }
     }
 
+    /// Resolves the latest copy of the receipt from the store (by id).
+    private var liveReceipt: Receipt {
+        store.receipts.first(where: { $0.id == receipt.id }) ?? receipt
+    }
+
     private var totalLines: [String] {
-        receipt.totalItems
+        liveReceipt.totalItems
             .map { numberPreservingDecimal($0) }
             .filter { !$0.isEmpty }
     }
 
     private var subtotalLines: [String] {
-        receipt.subtotalItems
+        liveReceipt.subtotalItems
             .map { numberPreservingDecimal($0) }
             .filter { !$0.isEmpty }
     }
 
     // Tax lines are temporarily hidden per request.
 
+    private func normalizedKey(_ s: String) -> String {
+        s.lowercased().replacingOccurrences(of: " ", with: "").replacingOccurrences(of: "-", with: "")
+    }
+
+    private var extractedSubtotal: String? { subtotalLines.last }
+    private var extractedTotal: String? { totalLines.last }
+    private var extractedTax: String? {
+        let taxCandidates = liveReceipt.typedLines.map { $0.text }.filter { normalizedKey($0).contains("tax") }
+        let compacted = taxCandidates.map { numberPreservingDecimal($0) }.filter { !$0.isEmpty }
+        return compacted.last
+    }
+
+    private func loadEditorDefaults() {
+        subtotalText = liveReceipt.editedSubtotal ?? extractedSubtotal ?? ""
+        taxText = liveReceipt.editedTax ?? extractedTax ?? ""
+        totalText = liveReceipt.editedTotal ?? extractedTotal ?? ""
+    }
+
     var body: some View {
         List {
+            if liveReceipt.isEdited {
+                Section {
+                    Label("Edited", systemImage: "pencil.circle.fill")
+                        .foregroundStyle(.tint)
+                        .font(.subheadline)
+                        .accessibilityIdentifier("receipt.editedBadge")
+                }
+            }
+
+            Section("Summary") {
+                HStack {
+                    Text("Subtotal")
+                    Spacer()
+                    if isEditing {
+                        TextField("Subtotal", text: $subtotalText)
+                            .multilineTextAlignment(.trailing)
+                            .keyboardType(.decimalPad)
+                            .textInputAutocapitalization(.never)
+                            .disableAutocorrection(true)
+                    } else {
+                        Text(liveReceipt.editedSubtotal ?? extractedSubtotal ?? "—")
+                            .foregroundStyle((liveReceipt.editedSubtotal != nil) ? .primary : .secondary)
+                    }
+                }
+                HStack {
+                    Text("Tax")
+                    Spacer()
+                    if isEditing {
+                        TextField("Tax", text: $taxText)
+                            .multilineTextAlignment(.trailing)
+                            .keyboardType(.decimalPad)
+                            .textInputAutocapitalization(.never)
+                            .disableAutocorrection(true)
+                    } else {
+                        Text(liveReceipt.editedTax ?? extractedTax ?? "—")
+                            .foregroundStyle((liveReceipt.editedTax != nil) ? .primary : .secondary)
+                    }
+                }
+                HStack {
+                    Text("Total")
+                    Spacer()
+                    if isEditing {
+                        TextField("Total", text: $totalText)
+                            .multilineTextAlignment(.trailing)
+                            .keyboardType(.decimalPad)
+                            .textInputAutocapitalization(.never)
+                            .disableAutocorrection(true)
+                    } else {
+                        Text(liveReceipt.editedTotal ?? extractedTotal ?? "—")
+                            .foregroundStyle((liveReceipt.editedTotal != nil) ? .primary : .secondary)
+                    }
+                }
+            }
+
             if !subtotalLines.isEmpty {
                 Section("Subtotal") {
                     ForEach(subtotalLines, id: \.self) { line in
@@ -84,15 +167,49 @@ struct ReceiptDetailView: View {
         .navigationTitle(receipt.title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    NavigationLink {
-                        ReceiptDetailLinesView(receipt: receipt)
+            ToolbarItem(placement: .topBarLeading) {
+                if liveReceipt.isEdited && !isEditing {
+                    Button {
+                        store.clearEdits(for: liveReceipt.id)
                     } label: {
-                        Label("Receipt Details", systemImage: "doc.text.magnifyingglass")
+                        Label("Undo", systemImage: "arrow.uturn.backward")
                     }
-                } label: {
-                    Image(systemName: "ellipsis.circle")
+                    .accessibilityIdentifier("receipt.undoEdits")
+                }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                HStack(spacing: 16) {
+                    if isEditing {
+                        Button {
+                            // Sanitize inputs and save
+                            let sub = numberPreservingDecimal(subtotalText)
+                            let tax = numberPreservingDecimal(taxText)
+                            let tot = numberPreservingDecimal(totalText)
+                            store.updateEdits(for: liveReceipt.id, subtotal: sub.isEmpty ? nil : sub, tax: tax.isEmpty ? nil : tax, total: tot.isEmpty ? nil : tot)
+                            isEditing = false
+                        } label: {
+                            Text("Save")
+                        }
+                        .accessibilityIdentifier("receipt.saveEdits")
+                    } else {
+                        Button {
+                            loadEditorDefaults()
+                            isEditing = true
+                        } label: {
+                            Text("Edit")
+                        }
+                        .accessibilityIdentifier("receipt.edit")
+                    }
+
+                    Menu {
+                        NavigationLink {
+                            ReceiptDetailLinesView(receipt: receipt)
+                        } label: {
+                            Label("Receipt Details", systemImage: "doc.text.magnifyingglass")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis.circle")
+                    }
                 }
             }
         }
@@ -100,15 +217,20 @@ struct ReceiptDetailView: View {
 }
 
 #Preview {
-    NavigationStack {
-        ReceiptDetailView(
-            receipt: Receipt(lines: [
-                "Store Name",
-                "Item 1   $1.99",
-                "Item 2   $3.49",
-                "Subtotal $5.48",
-                "Total    $5.48"
-            ])
-        )
+    do {
+        let container = try ModelContainer(for: ReceiptRecord.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let store = ReceiptStore(modelContext: container.mainContext)
+        let sample = Receipt(lines: [
+            "Store Name",
+            "Item 1   $1.99",
+            "Item 2   $3.49",
+            "Subtotal $5.48",
+            "Total    $5.48"
+        ])
+        return NavigationStack { ReceiptDetailView(receipt: sample) }
+            .modelContainer(container)
+            .environmentObject(store)
+    } catch {
+        return NavigationStack { Text("Preview Error") }
     }
 }
