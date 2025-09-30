@@ -90,13 +90,14 @@ final class ReceiptStore: ObservableObject {
 
     /// Updates edited values for a given receipt and persists the change.
     /// Empty strings are treated as nil (no override).
-    func updateEdits(for id: UUID, storeName: String?, subtotal: String?, tax: String?, total: String?) {
+    func updateEdits(for id: UUID, storeName: String?, date: Date?, subtotal: String?, tax: String?, total: String?) {
         guard let idx = records.firstIndex(where: { $0.id == id }) else { return }
         let normalize: (String?) -> String? = { value in
             guard let v = value?.trimmingCharacters(in: .whitespacesAndNewlines), !v.isEmpty else { return nil }
             return v
         }
         records[idx].editedStoreName = normalize(storeName)
+        records[idx].editedDate = date
         records[idx].editedSubtotal = normalize(subtotal)
         records[idx].editedTax = normalize(tax)
         records[idx].editedTotal = normalize(total)
@@ -112,6 +113,7 @@ final class ReceiptStore: ObservableObject {
     func clearEdits(for id: UUID) {
         guard let idx = records.firstIndex(where: { $0.id == id }) else { return }
         records[idx].editedStoreName = nil
+        records[idx].editedDate = nil
         records[idx].editedSubtotal = nil
         records[idx].editedTax = nil
         records[idx].editedTotal = nil

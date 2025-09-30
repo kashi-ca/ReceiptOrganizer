@@ -10,6 +10,8 @@ struct Receipt: Identifiable, Codable, Equatable, Hashable {
     let lines: [String]
     /// Optional user-edited store name override.
     let editedStoreName: String?
+    /// Optional user-edited date override.
+    let editedDate: Date?
     /// Optional user-edited overrides.
     let editedSubtotal: String?
     let editedTax: String?
@@ -25,6 +27,7 @@ struct Receipt: Identifiable, Codable, Equatable, Hashable {
         date: Date = Date(),
         lines: [String],
         editedStoreName: String? = nil,
+        editedDate: Date? = nil,
         editedSubtotal: String? = nil,
         editedTax: String? = nil,
         editedTotal: String? = nil
@@ -33,6 +36,7 @@ struct Receipt: Identifiable, Codable, Equatable, Hashable {
         self.date = date
         self.lines = lines
         self.editedStoreName = editedStoreName
+        self.editedDate = editedDate
         self.editedSubtotal = editedSubtotal
         self.editedTax = editedTax
         self.editedTotal = editedTotal
@@ -47,6 +51,7 @@ struct Receipt: Identifiable, Codable, Equatable, Hashable {
     /// Indicates whether any user edits exist for this receipt.
     var isEdited: Bool {
         (editedStoreName?.isEmpty == false) ||
+        (editedDate != nil) ||
         (editedSubtotal?.isEmpty == false) ||
         (editedTax?.isEmpty == false) ||
         (editedTotal?.isEmpty == false)

@@ -12,6 +12,8 @@ final class ReceiptRecord {
     var lines: [String]
     /// User-edited override for store name, optional.
     var editedStoreName: String?
+    /// User-edited override for date, optional.
+    var editedDate: Date?
     /// User-edited override for subtotal amount (normalized string), optional.
     var editedSubtotal: String?
     /// User-edited override for tax amount (normalized string), optional.
@@ -19,11 +21,12 @@ final class ReceiptRecord {
     /// User-edited override for total amount (normalized string), optional.
     var editedTotal: String?
 
-    init(id: UUID = UUID(), date: Date = Date(), lines: [String], editedStoreName: String? = nil, editedSubtotal: String? = nil, editedTax: String? = nil, editedTotal: String? = nil) {
+    init(id: UUID = UUID(), date: Date = Date(), lines: [String], editedStoreName: String? = nil, editedDate: Date? = nil, editedSubtotal: String? = nil, editedTax: String? = nil, editedTotal: String? = nil) {
         self.id = id
         self.date = date
         self.lines = lines
         self.editedStoreName = editedStoreName
+        self.editedDate = editedDate
         self.editedSubtotal = editedSubtotal
         self.editedTax = editedTax
         self.editedTotal = editedTotal
@@ -38,6 +41,7 @@ extension ReceiptRecord {
             date: date,
             lines: lines,
             editedStoreName: editedStoreName,
+            editedDate: editedDate,
             editedSubtotal: editedSubtotal,
             editedTax: editedTax,
             editedTotal: editedTotal
