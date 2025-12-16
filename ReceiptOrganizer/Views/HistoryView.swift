@@ -36,7 +36,7 @@ struct HistoryView: View {
                                                 .accessibilityLabel("Total \(total)")
                                         }
                                     }
-                                    Text(receipt.date.formatted(date: .abbreviated, time: .shortened))
+                                    Text((receipt.editedDate ?? receipt.date).formatted(date: .abbreviated, time: .omitted))
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }
